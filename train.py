@@ -11,13 +11,13 @@ if __name__ == '__main__':
     configure(folder=".", format_strings=["stdout", "log", "csv"])
 
     # Create the vectorized environment, and wrap each environment with a Monitor
-    env = make_vec_env(DoublePendulumEnv)#, n_envs=4, vec_env_cls=SubprocVecEnv, wrapper_class=Monitor, env_kwargs={'render': True})
+    env = make_vec_env(DoublePendulumEnv, n_envs=8, vec_env_cls=SubprocVecEnv, wrapper_class=Monitor, env_kwargs={'render': False})
 
     # Instantiate the agent
     model = PPO("MlpPolicy", env, verbose=1)
 
     # Train the agent
-    model.learn(total_timesteps=100000)
+    model.learn(total_timesteps=1000000)
 
     # Save the agent
     model.save("ppo_double_pendulum")

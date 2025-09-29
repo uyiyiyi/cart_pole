@@ -5,7 +5,7 @@ import gym
 from gym import spaces
 
 class DoublePendulumEnv(gym.Env):
-    def __init__(self, render=True):
+    def __init__(self, render=False):
         super(DoublePendulumEnv, self).__init__()
         self._render = render
         if self._render:
@@ -15,6 +15,7 @@ class DoublePendulumEnv(gym.Env):
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
+        p.setTimeStep(0.01)
 
 
         self.robotId = p.loadURDF("double_pendulum.urdf", [0, 0, 0.1])
@@ -22,7 +23,7 @@ class DoublePendulumEnv(gym.Env):
         self.action_space = spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
         
-        self.max_steps = 600
+        self.max_steps = 1000
         self.current_step = 0
         self.upright_steps = 0
         p.setJointMotorControl2(self.robotId, 0, p.VELOCITY_CONTROL, force=0)
@@ -38,7 +39,7 @@ class DoublePendulumEnv(gym.Env):
         p.resetBasePositionAndOrientation(self.robotId, [0, 0, 0.1], [0, 0, 0, 1])
         p.resetJointState(self.robotId, 0, 0)
         p.resetJointState(self.robotId, 1, np.pi)
-        p.resetJointState(self.robotId, 2, 0)
+        p.resetJointState(self.robotId, 2, 0.0)
         self.current_step = 0
         self.upright_steps = 0
         return self._get_obs()
@@ -61,12 +62,12 @@ class DoublePendulumEnv(gym.Env):
         theta1_reward = (theta1 + np.pi) % (2 * np.pi) - np.pi
         theta2_reward = (theta2 + np.pi) % (2 * np.pi) - np.pi
 
-        w_x = 0.1
+        w_x = 0.0
         w_theta1 = 1.0
         w_theta2 = 2.0
-        w_u = 0.01
+        w_u = 0.0
 
-        reward = np.exp(- (w_x * x**2 + w_theta1 * theta1_reward**2 + w_theta2 * theta2_reward**2 + w_u * u**2))
+        reward = -0.001 * (w_x * x**2 + w_theta1 * theta1_reward**2 + w_theta2 * theta2_reward**2 + w_u * u**2)
 
         self.current_step += 1
         done = False
@@ -82,11 +83,12 @@ class DoublePendulumEnv(gym.Env):
 
         if self.upright_steps >= 10:
             done = True
-            reward += 100  # Bonus for achieving the goal
+            reward = 10  # Bonus for achieving the goal
+            print("Success!")
         
         if x > 2.4 or x < -2.4:
             done = True
-            reward = -100.0 # Apply a large negative penalty
+            reward = -10.0 # Apply a large negative penalty
         
         if self.current_step >= self.max_steps:
             done = True

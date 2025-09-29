@@ -12,9 +12,10 @@ obs = env.reset()
 for i in range(1000):
     action, _states = model.predict(obs, deterministic=True)
     obs, reward, done, info = env.step(action)
-    time.sleep(1./240.)
+    time.sleep(0.01)
     if done:
         print("Episode finished. Resetting environment.")
+        print("Reward:", reward)
         obs = env.reset()
 
 env.close()
