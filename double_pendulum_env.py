@@ -1,8 +1,8 @@
 import pybullet as p
 import pybullet_data
 import numpy as np
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 
 class DoublePendulumEnv(gym.Env):
     def __init__(self, render=False):
@@ -35,14 +35,15 @@ class DoublePendulumEnv(gym.Env):
         # This method is required for compatibility with some SB3 wrappers.
         pass
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
         p.resetBasePositionAndOrientation(self.robotId, [0, 0, 0.1], [0, 0, 0, 1])
         p.resetJointState(self.robotId, 0, 0)
         p.resetJointState(self.robotId, 1, np.pi)
         p.resetJointState(self.robotId, 2, 0.0)
         self.current_step = 0
         self.upright_steps = 0
-        return self._get_obs()
+        return self._get_obs(), {}
 
     def step(self, action):
         p.setJointMotorControl2(self.robotId, 0, p.TORQUE_CONTROL, force=action[0] * 100)
@@ -70,7 +71,8 @@ class DoublePendulumEnv(gym.Env):
         reward = -0.001 * (w_x * x**2 + w_theta1 * theta1_reward**2 + w_theta2 * theta2_reward**2 + w_u * u**2)
 
         self.current_step += 1
-        done = False
+        terminated = False
+        truncated = False
 
         # Check for success condition
         angle_threshold = 0.15  # 5 degrees in radians
@@ -82,18 +84,17 @@ class DoublePendulumEnv(gym.Env):
             self.upright_steps = 0
 
         if self.upright_steps >= 10:
-            done = True
-            reward = 10  # Bonus for achieving the goal
-            print("Success!")
+            terminated = True
+            reward += 10  # Bonus for achieving the goal
         
         if x > 2.4 or x < -2.4:
-            done = True
+            terminated = True
             reward = -10.0 # Apply a large negative penalty
         
         if self.current_step >= self.max_steps:
-            done = True
+            truncated = True
 
-        return obs, reward, done, {}
+        return obs, reward, terminated, truncated, {}
 
     def _get_obs(self):
         cart_pos = p.getLinkState(self.robotId, 0)[0]
